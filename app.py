@@ -50,25 +50,25 @@ def summarize_text(text):
 # --- Streamlit UI ---
 
 st.set_page_config(page_title="Business Resume Summarizer", layout="wide")
-st.title(" Business-Focused Resume Summarizer")
-st.markdown("Upload resumes to extract a concise 30-word summary highlighting business-relevant strengths.")
+st.title("🤖 Business-Focused Resume Summarizer")
+st.markdown("Upload resumes to receive a smart, AI-generated 30-word summary that highlights business-relevant strengths, achievements, and strategic keywords.")
 
 with st.sidebar:
-    st.header("Upload Resumes")
+    st.header("📤 Upload Resumes")
     uploaded_files = st.file_uploader("Choose files", type=["pdf", "docx", "txt"], accept_multiple_files=True)
 
 if uploaded_files:
-    summaries = []
+    st.subheader("🧠 AI-Generated Business Insights")
+
     for file in uploaded_files:
         text = extract_text(file)
-        summary = summarize_text(text)
-        summaries.append({"File": file.name, "Summary": summary})
+        summary_words = summarize_text(text).split()
+        summary = " ".join(summary_words[:30])
 
-    df = pd.DataFrame(summaries)
-    st.subheader("Extracted Business Highlights")
-    st.dataframe(df)
+        st.markdown(f"**📄 {file.name}**")
+        st.write("Here's what stands out from a business perspective:")
+        st.markdown(f"> {summary}")
+        st.markdown("---")
 
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(" Download Summary CSV", csv, file_name="business_resume_summary.csv")
 else:
-    st.info("Upload one or more resumes to generate business-focused summaries.")
+    st.info("Upload one or more resumes to generate intelligent 30-word summaries focused on business impact.")
