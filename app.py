@@ -9,12 +9,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.cluster import KMeans
 import os
 
-# Ensure SpaCy model is loaded
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    st.error("SpaCy model 'en_core_web_sm' not found. Please run: python -m spacy download en_core_web_sm")
-    st.stop()
+nlp = spacy.load("en_core_web_sm")
+
 
 def extract_text(file):
     ext = file.name.split('.')[-1].lower()
