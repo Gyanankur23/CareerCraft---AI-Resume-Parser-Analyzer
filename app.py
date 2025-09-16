@@ -1,6 +1,13 @@
 import streamlit as st
 import pandas as pd
 import spacy
+from spacy.cli import download
+
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 import tempfile
 from PyPDF2 import PdfReader
 import docx
@@ -8,9 +15,6 @@ import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.cluster import KMeans
 import os
-
-nlp = spacy.load("en_core_web_sm")
-
 
 def extract_text(file):
     ext = file.name.split('.')[-1].lower()
