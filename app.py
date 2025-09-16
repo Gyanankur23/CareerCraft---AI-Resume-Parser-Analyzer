@@ -70,13 +70,16 @@ def cluster_skills(all_skills):
 
 # Streamlit UI
 st.set_page_config(page_title="Resume Parser & Analyzer", layout="wide")
-st.title("📄 AI-Powered Resume Parser & Analyzer")
+st.title("AI-Powered Resume Parser & Analyzer")
 st.markdown("Upload multiple resumes (PDF, DOCX, or TXT) to extract emails, phone numbers, and skills. Analyze and cluster candidates with just a click!")
 
 with st.sidebar:
     st.header("Upload Resumes")
-    uploaded_files = st.file_uploader("Choose files", type=["pdf", "docx", "txt"], accept_multiple_files=True)
-
+    uploaded_files = st.file_uploader(
+        "Choose files",
+        type=["pdf", "docx", "txt"],
+        accept_multiple_files=True
+    )
 if uploaded_files:
     results = []
     progress = st.progress(0)
@@ -92,7 +95,7 @@ if uploaded_files:
     st.dataframe(df)
 
     csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Results as CSV", csv, file_name="resume_results.csv")
+    st.download_button(" Download Results as CSV", csv, file_name="resume_results.csv")
 
     all_skills = [r["extracted_data"]["skills"] for r in results]
     labels = cluster_skills(all_skills)
