@@ -1,20 +1,11 @@
 import streamlit as st
 import pandas as pd
-import spacy
-from spacy.cli import download
-
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
 import tempfile
 from PyPDF2 import PdfReader
 import docx
 import re
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.cluster import KMeans
-import os
+
+# --- Helper Functions ---
 
 def extract_text(file):
     ext = file.name.split('.')[-1].lower()
@@ -36,80 +27,48 @@ def extract_text(file):
             text = file.read().decode("latin-1")
     return text
 
-def extract_entities(text):
-    doc = nlp(text)
-    email = ""
-    phone = ""
-    for token in doc:
-        if re.match(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", token.text):
-            email = token.text
-        if re.match(r"\b\d{10}\b", token.text):
-            phone = token.text
-    skills = list(set([chunk.text.strip() for chunk in doc.noun_chunks if len(chunk.text.split()) < 4]))
-    return {"email": email, "phone": phone, "skills": skills}
+def clean_text(text):
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'[^\w\s]', '', text)
+    return text.lower()
 
-def flatten_results(results):
-    rows = []
-    for result in results:
-        row = {
-            "file_name": result['file_name'],
-            "email": result['extracted_data']['email'],
-            "phone": result['extracted_data']['phone'],
-            "skills": ", ".join(result['extracted_data']['skills'])
-        }
-        rows.append(row)
-    return pd.DataFrame(rows)
+def summarize_text(text):
+    keywords = [
+        "business", "strategy", "growth", "sales", "marketing", "leadership", "operations",
+        "project", "management", "client", "revenue", "team", "performance", "data", "analytics",
+        "finance", "innovation", "solution", "impact", "result", "delivery", "execution", "planning"
+    ]
+    words = clean_text(text).split()
+    summary = []
+    for word in words:
+        if word in keywords and word not in summary:
+            summary.append(word)
+        if len(summary) >= 30:
+            break
+    return " ".join(summary)
 
-def cluster_skills(all_skills):
-    skills_flat = [" ".join(skills) for skills in all_skills]
-    vec = CountVectorizer()
-    X = vec.fit_transform(skills_flat)
-    kmeans = KMeans(n_clusters=min(3, len(skills_flat)), random_state=42, n_init='auto')
-    labels = kmeans.fit_predict(X)
-    return labels
+# --- Streamlit UI ---
 
-# Streamlit UI
-st.set_page_config(page_title="Resume Parser & Analyzer", layout="wide")
-st.title("AI-Powered Resume Parser & Analyzer")
-st.markdown("Upload multiple resumes (PDF, DOCX, or TXT) to extract emails, phone numbers, and skills. Analyze and cluster candidates with just a click!")
+st.set_page_config(page_title="Business Resume Summarizer", layout="wide")
+st.title(" Business-Focused Resume Summarizer")
+st.markdown("Upload resumes to extract a concise 30-word summary highlighting business-relevant strengths.")
 
 with st.sidebar:
     st.header("Upload Resumes")
-    uploaded_files = st.file_uploader(
-        "Choose files",
-        type=["pdf", "docx", "txt"],
-        accept_multiple_files=True
-    )
-if uploaded_files:
-    results = []
-    progress = st.progress(0)
-    for idx, file in enumerate(uploaded_files):
-        text = extract_text(file)
-        entities = extract_entities(text)
-        results.append({"file_name": file.name, "extracted_data": entities})
-        progress.progress((idx + 1) / len(uploaded_files))
-    st.success(f"Processed {len(results)} files.")
+    uploaded_files = st.file_uploader("Choose files", type=["pdf", "docx", "txt"], accept_multiple_files=True)
 
-    df = flatten_results(results)
-    st.header("Parsing Results")
+if uploaded_files:
+    summaries = []
+    for file in uploaded_files:
+        text = extract_text(file)
+        summary = summarize_text(text)
+        summaries.append({"File": file.name, "Summary": summary})
+
+    df = pd.DataFrame(summaries)
+    st.subheader("Extracted Business Highlights")
     st.dataframe(df)
 
     csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(" Download Results as CSV", csv, file_name="resume_results.csv")
-
-    all_skills = [r["extracted_data"]["skills"] for r in results]
-    labels = cluster_skills(all_skills)
-    df["Skill Cluster"] = labels
-    st.subheader("Candidate Clusters by Skills")
-    st.dataframe(df)
-
-    st.bar_chart(df["Skill Cluster"].value_counts())
+    st.download_button(" Download Summary CSV", csv, file_name="business_resume_summary.csv")
 else:
-    st.info("Upload one or more resumes to start parsing.")
-
-st.markdown("""
----
-**How to Use:**
-1. Upload resumes in sidebar  
-2. View extracted info, clusters, and download results
-""")
+    st.info("Upload one or more resumes to generate business-focused summaries.")
